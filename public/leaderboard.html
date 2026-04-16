@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COMPILE CLASH LEADERBOARD</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #020202;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 243, 255, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(255, 0, 234, 0.05), transparent 25%);
+        }
+        .leaderboard-title {
+            text-align: center;
+            font-size: 60px;
+            margin-top: 30px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 20px var(--neon-blue);
+            letter-spacing: 5px;
+        }
+        .leaderboard-container {
+            width: 80%;
+            max-height: 80vh;
+            overflow-y: auto;
+            margin: 40px auto;
+            border: 2px solid var(--neon-pink);
+            box-shadow: 0 0 30px rgba(255, 0, 234, 0.2);
+            background: rgba(10, 10, 10, 0.9);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 28px;
+            text-align: center;
+        }
+        th {
+            color: var(--neon-pink);
+            border-bottom: 2px solid var(--neon-pink);
+            padding: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        td {
+            color: white;
+            padding: 15px;
+            border-bottom: 1px solid #222;
+        }
+        
+        .rank-glow {
+            font-weight: bold;
+            color: var(--neon-green);
+            text-shadow: 0 0 10px var(--neon-green);
+        }
+
+        /* Top 3 Highlighting */
+        tr:nth-child(1) td { color: #ffd700; text-shadow: 0 0 15px #ffd700; font-size: 36px; }
+        tr:nth-child(2) td { color: #c0c0c0; text-shadow: 0 0 10px #c0c0c0; font-size: 32px; }
+        tr:nth-child(3) td { color: #cd7f32; text-shadow: 0 0 10px #cd7f32; font-size: 30px; }
+
+    </style>
+</head>
+<body>
+
+    <h1 class="leaderboard-title">GLOBAL SYSTEM RANKINGS</h1>
+    
+    <div class="leaderboard-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>RANK</th>
+                    <th>TEAM ALIAS</th>
+                    <th>MODULE</th>
+                    <th>ACTIVE TIME</th>
+                </tr>
+            </thead>
+            <tbody id="lb-body">
+                <!-- Dynamically Populated -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        async function fetchLeaderboard() {
+            try {
+                const res = await fetch('/api/leaderboard');
+                const teams = await res.json();
+                
+                const tbody = document.getElementById('lb-body');
+                tbody.innerHTML = '';
+                
+                teams.forEach((team, index) => {
+                    const tr = document.createElement('tr');
+                    
+                    tr.innerHTML = `
+                        <td class="rank-glow">#${index + 1}</td>
+                        <td>${team.team_name}</td>
+                        <td>${team.current_level} - ${team.current_sublevel}</td>
+                        <td>${formatTime(team.active_time_seconds)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Leaderboard fetch failed", err);
+            }
+        }
+
+        // Render immediately, then poll every 5 seconds
+        fetchLeaderboard();
+        setInterval(fetchLeaderboard, 5000);
+    </script>
+</body>
+</html>

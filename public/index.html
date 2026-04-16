@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COMPILE CLASH</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Phaser 3 via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+</head>
+<body>
+    <div id="game-container"></div>
+    
+    <!-- Menu Login Overlay -->
+    <div id="login-overlay" class="hidden">
+        <div class="login-content" id="login-main-panel">
+            <h1 class="neon-glow text-center">COMPILE CLASH</h1>
+            <p class="sys-msg text-center">LOCAL UPLINK SELECTION</p>
+            
+            <div id="create-team-section">
+                <div class="terminal-input login-input-wrapper">
+                    <span class="prompt">NAME></span>
+                    <input type="text" id="team-name-input" autocomplete="off" placeholder="e.g. Cyber Ninjas" />
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button id="btn-1player" class="cyber-button w-100" style="padding:15px; border-color:var(--neon-green); color:var(--neon-green)">1-PLAYER</button>
+                    <button id="btn-2player" class="cyber-button w-100" style="padding:15px; border-color:var(--neon-pink); color:var(--neon-pink)">2-PLAYER</button>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- Terminal / Coding Area Overlay -->
+    <div id="compile-clash-terminal" class="hidden">
+        <div class="terminal-header">
+            <h3>[ SYSTEM OVERRIDE TERMINAL ]</h3>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+            <!-- Messages dynamically populated here -->
+            <p class="sys-msg">> SYSTEM HALTED.</p>
+            <p class="sys-msg">> AWAITING CODE INPUT FOR DATA BLOCK DECRYPTION...</p>
+        </div>
+        <div class="terminal-input">
+            <span class="prompt">CODE></span>
+            <textarea id="command-input" rows="3" placeholder="Type your js code here..."></textarea>
+        </div>
+        <div class="terminal-footer">
+            <button id="submit-code-btn" class="cyber-button">EXECUTE SEQUENCE</button>
+            <div id="next-level-container" class="hidden" style="margin-top: 15px;">
+                <p class="success-msg">ACCESS GRANTED. BLOCK DECRYPTED.</p>
+                <button id="next-level-btn" class="cyber-button" style="border-color: #39ff14; color: #39ff14;">INITIATE NEXT MODULE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Game Logic -->
+    <script src="game.js"></script>
+</body>
+</html>
