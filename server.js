@@ -59,7 +59,7 @@ app.post('/api/register', (req, res) => {
 app.get('/api/teams/:id/question', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const teamId = req.params.id;
-    db.get(`SELECT current_level, current_sublevel, player_count FROM teams WHERE id = ?`, [teamId], (err, row) => {
+    db.get(`SELECT current_level, current_sublevel, player_count, active_time_seconds FROM teams WHERE id = ?`, [teamId], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!row) return res.status(404).json({ error: 'Team not found' });
         
@@ -75,6 +75,7 @@ app.get('/api/teams/:id/question', (req, res) => {
             current_level: row.current_level, 
             current_sublevel: row.current_sublevel, 
             player_count: row.player_count, 
+            active_time_seconds: row.active_time_seconds,
             question_text: question.text, 
             level_difficulty: question.level 
         });
@@ -213,8 +214,14 @@ app.post('/api/teams/:id/progress', (req, res) => {
                      total_score = total_score + ?, active_time_seconds = ?
                  WHERE id = ?`;
 
-    db.run(sql, [new_level, new_sublevel, score_increment || 0, duration_seconds || 0, teamId], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
+    const val_duration = parseInt(duration_seconds) || 0;
+    console.log(`[TIMER DEBUG] Team ${teamId} updating progress. Received duration: ${val_duration}s. Update using: ${sql}`);
+
+    db.run(sql, [new_level, new_sublevel, score_increment || 0, val_duration, teamId], function(err) {
+        if (err) {
+            console.error(`[TIMER ERROR] Team ${teamId} update failed:`, err.message);
+            return res.status(500).json({ error: err.message });
+        }
         res.json({ message: 'Team progress updated successfully.' });
     });
 });

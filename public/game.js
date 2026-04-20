@@ -104,6 +104,7 @@ class BootScene extends Phaser.Scene {
                         this.registry.set(REGISTRY_TEAM_ID, storedId);
                         this.registry.set(REGISTRY_MODULE, parseInt(q.current_level) || 1);
                         this.registry.set(REGISTRY_SUBLEVEL, parseInt(q.current_sublevel) || 1);
+                        this.registry.set('activeTimeSeconds', q.active_time_seconds || 0);
                         globalPlayerCount = 2;
                         const overlay = document.getElementById('login-overlay');
                         if (overlay) overlay.classList.add('hidden');
@@ -170,13 +171,17 @@ class MenuScene extends Phaser.Scene {
 
         if (regBtn) regBtn.onclick = registerAndWait;
         if (startBtn) startBtn.onclick = () => {
-            // Persistent session timer start
-            if (!localStorage.getItem('gameStartTime')) {
-                localStorage.setItem('gameStartTime', Date.now().toString());
-            }
             fetch(`/api/teams/${this.registry.get(REGISTRY_TEAM_ID)}/question`).then(r => r.json()).then(q => {
                 this.registry.set(REGISTRY_MODULE, parseInt(q.current_level) || 1);
                 this.registry.set(REGISTRY_SUBLEVEL, parseInt(q.current_sublevel) || 1);
+                this.registry.set('activeTimeSeconds', q.active_time_seconds || 0);
+                
+                // Set initial startTime if not present
+                if (!localStorage.getItem('gameStartTime')) {
+                    const sessionStart = Date.now() - ((q.active_time_seconds || 0) * 1000);
+                    localStorage.setItem('gameStartTime', sessionStart.toString());
+                }
+                
                 overlay.classList.add('hidden');
                 this.scene.start('UIScene');
             });
@@ -295,12 +300,26 @@ class UIScene extends Phaser.Scene {
         this.registry.set(REGISTRY_GAME_RUNNING, false);
         this.currentState = GameState.PLAYING; 
         
-        // Use persistent start time from localStorage
-        const storedStartTime = localStorage.getItem('gameStartTime');
-        if (!storedStartTime) {
-            localStorage.setItem('gameStartTime', Date.now().toString());
+        // Priority 1: Use persistent start time from localStorage (keeps mid-level progress on refresh)
+        const stored = localStorage.getItem('gameStartTime');
+        const serverTime = this.registry.get('activeTimeSeconds');
+
+        if (stored) {
+            console.log(`[CLIENT TIMER] Resuming from localStorage: ${stored}`);
+            this.gameStartTime = parseInt(stored);
+            this.registry.remove('activeTimeSeconds'); // Consume server data anyway
+        } else if (serverTime !== undefined && serverTime !== null) {
+            // Priority 2: Sync with server if fresh session or new browser
+            console.log(`[CLIENT TIMER] Initializing from server baseline: ${serverTime}s`);
+            this.gameStartTime = Date.now() - (serverTime * 1000);
+            localStorage.setItem('gameStartTime', this.gameStartTime.toString());
+            this.registry.remove('activeTimeSeconds');
+        } else {
+            // Priority 3: Fresh start
+            console.log(`[CLIENT TIMER] Fresh session start.`);
+            this.gameStartTime = Date.now();
+            localStorage.setItem('gameStartTime', this.gameStartTime.toString());
         }
-        this.gameStartTime = parseInt(localStorage.getItem('gameStartTime'));
     }
 
     update() { this.updateHUD(this.activeGameplayScene); }
@@ -319,9 +338,10 @@ class UIScene extends Phaser.Scene {
         const levelName = levelNames[m] || `MODULE ${m}`;
         const elapsed = Math.floor((Date.now() - this.gameStartTime) / 1000);
         const formatTime = (s) => {
-            const mins = Math.floor(s / 60).toString().padStart(2, '0');
-            const secs = (s % 60).toString().padStart(2, '0');
-            return `${mins}:${secs}`;
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+            const sec = (s % 60).toString().padStart(2, '0');
+            return h > 0 ? `${h}:${m}:${sec}` : `${m}:${sec}`;
         };
         this.hudText.setText(`${levelName}\nSUBLEVEL: 0${sl}\nTIME: ${formatTime(elapsed)}`);
 
@@ -418,6 +438,7 @@ class UIScene extends Phaser.Scene {
         const id = this.registry.get(REGISTRY_TEAM_ID);
         const { newLevel, newSub } = this.calculateNextLevel();
         const duration_seconds = Math.floor((Date.now() - this.gameStartTime) / 1000);
+        console.log(`[CLIENT TIMER] Auto-advancing. Sending duration: ${duration_seconds}s`);
 
         fetch(`/api/teams/${id}/progress`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -440,6 +461,7 @@ class UIScene extends Phaser.Scene {
             this.registry.set('nextSub', newSub);
             this.registry.set('nextMod', newLevel);
             const duration_seconds = Math.floor((Date.now() - this.gameStartTime) / 1000);
+            console.log(`[CLIENT TIMER] Skipping via hidden shortcut. Sending duration: ${duration_seconds}s`);
             fetch(`/api/teams/${id}/progress`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ new_level: newLevel, new_sublevel: newSub, score_increment: 0, duration_seconds })
@@ -594,6 +616,7 @@ class UIScene extends Phaser.Scene {
 
             let id = this.registry.get(REGISTRY_TEAM_ID);
             const duration_seconds = Math.floor((Date.now() - this.gameStartTime) / 1000);
+            console.log(`[CLIENT TIMER] Submitting via terminal. Sending duration: ${duration_seconds}s`);
 
             fetch(`/api/teams/${id}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ submission: code }) })
                 .then(res => res.json())
