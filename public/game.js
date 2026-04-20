@@ -411,10 +411,6 @@ class UIScene extends Phaser.Scene {
         document.getElementById('next-level-container').classList.add('hidden');
         document.getElementById('submit-code-btn').disabled = false;
 
-        // Always show Skip Button for testing
-        const skipBtn = document.getElementById('skip-code-btn');
-        skipBtn.classList.remove('hidden');
-
         document.getElementById('terminal-body').innerHTML = `<p class="sys-msg">> TEAM HALTED. AWAITING DECRYPTION KEY...</p>`;
     }
 
@@ -432,6 +428,29 @@ class UIScene extends Phaser.Scene {
             this.registry.set(REGISTRY_MODULE, newLevel);
             this.startActiveGameplayScene();
         });
+    }
+
+    performHiddenSkip() {
+        if (this.currentState === GameState.PLAYING) {
+            this.triggerSubLevelComplete();
+        } else if (this.currentState === GameState.SYSTEM_OVERRIDE) {
+            this.appendToTerminal(`> [DEBUG] BYPASSING SECURITY LAYER...`);
+            let id = this.registry.get(REGISTRY_TEAM_ID);
+            const { newLevel, newSub } = this.calculateNextLevel();
+            this.registry.set('nextSub', newSub);
+            this.registry.set('nextMod', newLevel);
+            const duration_seconds = Math.floor((Date.now() - this.gameStartTime) / 1000);
+            fetch(`/api/teams/${id}/progress`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ new_level: newLevel, new_sublevel: newSub, score_increment: 0, duration_seconds })
+            }).then(() => {
+                document.getElementById('next-level-container').classList.remove('hidden');
+                this.appendToTerminal(`> [SUCCESS] SYSTEM BYPASS GRANTED.`, 'sys-msg');
+            });
+        } else if (!document.getElementById('compile-clash-quiz').classList.contains('hidden')) {
+            document.getElementById('compile-clash-quiz').classList.add('hidden');
+            this.autoAdvance();
+        }
     }
 
     showWinUI() {
@@ -548,7 +567,6 @@ class UIScene extends Phaser.Scene {
     setupHTMLOverlays() {
         if (this.uiBinded) return;
         const submitBtn = document.getElementById('submit-code-btn');
-        const skipCodeBtn = document.getElementById('skip-code-btn');
         const nextLevelBtn = document.getElementById('next-level-btn');
         const inputField = document.getElementById('command-input');
 
@@ -600,32 +618,6 @@ class UIScene extends Phaser.Scene {
                 });
         };
 
-        skipCodeBtn.onclick = () => {
-            if (this.currentState !== GameState.SYSTEM_OVERRIDE) return;
-            this.currentState = GameState.VALIDATING;
-            submitBtn.disabled = true;
-            this.appendToTerminal(`> [DEBUG] BYPASSING SECURITY LAYER...`);
-
-            let id = this.registry.get(REGISTRY_TEAM_ID);
-            fetch(`/api/teams/${id}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ submission: "DEBUG_SKIP" }) })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        this.appendToTerminal(`> [SUCCESS] SYSTEM BYPASS GRANTED.`, 'sys-msg');
-                        document.getElementById('next-level-container').classList.remove('hidden');
-                        const { newLevel, newSub } = this.calculateNextLevel();
-                        this.registry.set('nextSub', newSub);
-                        this.registry.set('nextMod', newLevel);
-
-                        const duration_seconds = Math.floor((Date.now() - this.gameStartTime) / 1000);
-                        fetch(`/api/teams/${id}/progress`, {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ new_level: newLevel, new_sublevel: newSub, score_increment: 0, duration_seconds })
-                        });
-                    }
-                });
-        };
-
         nextLevelBtn.onclick = () => {
             document.getElementById('compile-clash-terminal').classList.add('hidden');
             document.getElementById('compile-clash-terminal').classList.remove('terminal-anim-slide-in');
@@ -636,9 +628,12 @@ class UIScene extends Phaser.Scene {
             this.startActiveGameplayScene();
         };
         this.uiBinded = true;
-        // Dev Skip Feature: 'O' for instant terminal
-        this.input.keyboard.on('keydown-O', () => {
-            this.triggerSubLevelComplete();
+
+        this.input.keyboard.on('keydown', (event) => {
+            // Shift + 8 (the key containing asterisk)
+            if (event.shiftKey && (event.key === '8' || event.code === 'Digit8')) {
+                this.performHiddenSkip();
+            }
         });
     }
 
@@ -662,12 +657,6 @@ class UIScene extends Phaser.Scene {
 
         nextBtn.onclick = () => {
             this.renderQuizQuestion();
-        };
-
-        const skipBtn = document.getElementById('quiz-skip-btn');
-        skipBtn.onclick = () => {
-            quizUI.classList.add('hidden');
-            this.autoAdvance();
         };
     }
 
