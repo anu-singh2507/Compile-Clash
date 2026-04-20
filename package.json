@@ -11,6 +11,10 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20.17.0",
+    "npm": ">=10"
+  },
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
