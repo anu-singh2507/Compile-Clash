@@ -28,6 +28,11 @@ const questions = {
         level: "Celestial Defender",
         text: `## 🔵 Q4 — FIND THE OUTPUT (Python)\n\n# What will be the output of the following Python code?\n\nx = 10\ny = 3\n\nprint(x + y)\nprint(x % y)\nprint(x // y)\nprint(x > y)\n\nfruits = ["apple", "banana", "cherry"]\nprint(fruits[1])\nprint(len(fruits))`,
         expected: "SPECIAL_OUTPUT_VALIDATION_L4S2"
+    },
+    "4-3": {
+        level: "Celestial Defender",
+        text: `## ⭐ Q5 — STAR PATTERN (Python) — THE MAIN QUESTION\n\n# Write a Python program to print the following TWO patterns using n = 5.\n\n# Pattern 1 (Triangle) and Pattern 2 (Reverse Triangle).\n# Use a LOOP to solve both.`,
+        expected: "SPECIAL_CODE_VALIDATION_L4S3"
     }
 };
 for (let i = 4; i <= 50; i++) {
@@ -116,6 +121,15 @@ app.post('/api/teams/:id/submit', (req, res) => {
             const normalizedOutput = submission.trim().replace(/\r\n/g, '\n').replace(/\s+/g, ' ');
             const expectedOutput = "13 1 3 True banana 3";
             if (normalizedOutput === expectedOutput) isValid = true;
+        } else if (qKey === "4-3") {
+            const code = submission.toLowerCase();
+            const hasLoop = code.includes('for ') || code.includes('while ');
+            const hasNValue = /n\s*=\s*5/.test(code);
+            const rangeCount = (code.match(/range/g) || []).length;
+            const hasPrinting = code.includes('print') && code.includes('*');
+            
+            // Leniency: At least 1 loop, n=5, 2 ranges (for 2 patterns), and star printing
+            if (hasLoop && hasNValue && rangeCount >= 2 && hasPrinting) isValid = true;
         } else if (question && question.expected) {
             isValid = submission.includes(question.expected);
         } else {
