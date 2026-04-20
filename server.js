@@ -23,6 +23,11 @@ const questions = {
         level: "Cyber Drift", 
         text: `## 🟢 Q3 — SPOT THE BUG (HTML)\n\n# Fix the 4 errors in the code below:\n\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Student Profile</title>\n</head>\n<body>\n\n    <h1>Student Profile<h1>\n\n    <p>Name: <b>Alex Johnson</b></p>\n    <p>Course: <i>Computer Science<i></p>\n    <br>\n\n    <p>Visit us: <a href="www.college.edu">College Website</p>\n\n    <hr>\n\n    <table border="1">\n        <tr>\n            <th>Subject</th>\n            <th>Marks</th>\n        </tr>\n        <tr>\n            <td>Python</td>\n            <td>88<th>\n        </tr>\n    </table>\n\n</body>\n</html>`, 
         expected: "SPECIAL_HTML_VALIDATION_L3S3" 
+    },
+    "4-2": {
+        level: "Celestial Defender",
+        text: `## 🔵 Q4 — FIND THE OUTPUT (Python)\n\n# What will be the output of the following Python code?\n\nx = 10\ny = 3\n\nprint(x + y)\nprint(x % y)\nprint(x // y)\nprint(x > y)\n\nfruits = ["apple", "banana", "cherry"]\nprint(fruits[1])\nprint(len(fruits))`,
+        expected: "SPECIAL_OUTPUT_VALIDATION_L4S2"
     }
 };
 for (let i = 4; i <= 50; i++) {
@@ -107,6 +112,10 @@ app.post('/api/teams/:id/submit', (req, res) => {
             const hasAnchor = /<a\s+href=.*?<\/a\s*>/i.test(code);
             const hasTableCell = /<td\s*>\s*88\s*<\/td\s*>/i.test(code);
             if (hasH1 && hasItalic && hasAnchor && hasTableCell) isValid = true;
+        } else if (qKey === "4-2") {
+            const normalizedOutput = submission.trim().replace(/\r\n/g, '\n').replace(/\s+/g, ' ');
+            const expectedOutput = "13 1 3 True banana 3";
+            if (normalizedOutput === expectedOutput) isValid = true;
         } else if (question && question.expected) {
             isValid = submission.includes(question.expected);
         } else {
