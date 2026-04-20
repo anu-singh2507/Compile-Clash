@@ -175,13 +175,13 @@ class MenuScene extends Phaser.Scene {
                 this.registry.set(REGISTRY_MODULE, parseInt(q.current_level) || 1);
                 this.registry.set(REGISTRY_SUBLEVEL, parseInt(q.current_sublevel) || 1);
                 this.registry.set('activeTimeSeconds', q.active_time_seconds || 0);
-                
+
                 // Set initial startTime if not present
                 if (!localStorage.getItem('gameStartTime')) {
                     const sessionStart = Date.now() - ((q.active_time_seconds || 0) * 1000);
                     localStorage.setItem('gameStartTime', sessionStart.toString());
                 }
-                
+
                 overlay.classList.add('hidden');
                 this.scene.start('UIScene');
             });
@@ -298,8 +298,8 @@ class UIScene extends Phaser.Scene {
         this.scene.bringToTop('UIScene');
         this.activeGameplayScene = sceneToLoad;
         this.registry.set(REGISTRY_GAME_RUNNING, false);
-        this.currentState = GameState.PLAYING; 
-        
+        this.currentState = GameState.PLAYING;
+
         // Priority 1: Use persistent start time from localStorage (keeps mid-level progress on refresh)
         const stored = localStorage.getItem('gameStartTime');
         const serverTime = this.registry.get('activeTimeSeconds');
@@ -968,7 +968,7 @@ class LevelDevilScene extends Phaser.Scene {
             this.physics.add.existing(pitRight, true); this.platforms.add(pitRight);
             let pitLeft = this.add.rectangle(pitX - 5, floorY + 30, 10, 60, 0x00ffff, 0.3);
             this.physics.add.existing(pitLeft, true); this.platforms.add(pitLeft);
-            
+
             // Invisible Physics Boundaries (The Yellow Path)
             let invCeil = this.add.rectangle((150 + pitX) / 2, ceilingY, pitX - 150, 10, 0x00ffff, 0);
             this.physics.add.existing(invCeil, true); this.platforms.add(invCeil);
@@ -1186,7 +1186,7 @@ class LevelDevilScene extends Phaser.Scene {
             let p2Moved = this.player2 ? Math.abs(this.player2.x - 3090) > 10 : false;
             if (this.inPhase2 && (p1Moved || p2Moved) && !this.redPortalMovementStarted) {
                 this.redPortalMovementStarted = true;
-                this.tweens.add({ 
+                this.tweens.add({
                     targets: this.redPortal, x: 3800, duration: 25000, ease: 'Linear',
                     onUpdate: () => { if (this.redPortal && this.redPortal.active) this.redPortal.refreshBody(); }
                 });
@@ -1968,6 +1968,9 @@ class SpaceShooterScene extends Phaser.Scene {
         if (this.subLevel === 3) {
             this.spawnTimerMine = this.time.addEvent({ delay: 4000, callback: this.spawnMine, callbackScope: this, loop: true, paused: true });
             this.bossAttackTimer = this.time.addEvent({ delay: 1500, callback: this.bossAttack, callbackScope: this, loop: true, paused: true });
+            // Increase shooter frequency for L4 S3
+            this.spawnTimerShooter = this.time.addEvent({ delay: 2000, callback: this.spawnShooter, callbackScope: this, loop: true, paused: true });
+            this.bossPhase = 1;
         }
 
         // 6. Physics Colliders
@@ -1990,7 +1993,7 @@ class SpaceShooterScene extends Phaser.Scene {
         if (this.boss) {
             this.physics.add.overlap(this.asteroids, this.boss, (boss, asteroid) => {
                 if (asteroid.isDeflected) {
-                    this.damageBoss(10);
+                    this.damageBoss(5);
                     let exp = this.add.sprite(asteroid.x, asteroid.y, 'explosion_2_01').setScale(1.2);
                     exp.play('boom_2');
                     exp.on('animationcomplete', () => exp.destroy());
@@ -2011,7 +2014,7 @@ class SpaceShooterScene extends Phaser.Scene {
         this.shootersSpawned = 0;
 
         let hudText = this.subLevel === 1 ? 'ENEMIES DESTROYED: 0 / 20' :
-            this.subLevel === 2 ? 'SYSTEM BREACH: 0/30 | 0/15' :
+            this.subLevel === 2 ? 'SYSTEM BREACH: 0/30 | 0/20' :
                 'MOTHER-SHIP CORE';
         this.scoreText = this.add.text(width / 2, 80, hudText, { fontSize: '24px', fill: '#00f3ff', fontFamily: 'Courier New' }).setScrollFactor(0).setOrigin(0, 0);
         this.scoreText.setX(width / 2 - this.scoreText.width / 2);
@@ -2093,16 +2096,17 @@ class SpaceShooterScene extends Phaser.Scene {
             en.lastShot = 0;
             this.crashingSpawned++;
 
-            // Randomly spawn a shooter along with crashing ships in later levels
-            if (this.subLevel >= 2 && Math.random() > 0.7) {
+            // Higher shooter spawn chance in SL3
+            let shooterChance = (this.subLevel === 3) ? 0.4 : 0.7;
+            if (this.subLevel >= 2 && Math.random() > shooterChance) {
                 this.spawnShooter();
             }
         }
     }
 
     spawnShooter() {
-        if (this.subLevel === 3 && this.boss.hp <= 50) return;
-        if ((this.subLevel === 2 && this.shootersSpawned < 15) || (this.subLevel === 3 && this.boss.hp > 50)) {
+        if (this.subLevel === 3 && (this.bossDead || (this.bossPhase && this.bossPhase === 2))) return;
+        if ((this.subLevel === 2 && this.shootersSpawned < 20) || (this.subLevel === 3 && this.boss.hp > 0)) {
             let x = Phaser.Math.Between(100, this.scale.width - 100);
             let color = ['r', 'g', 'b'][Math.floor(Math.random() * 3)];
             let en = this.shooterEnemies.create(x, -50, `enemy2_${color}_m`).setScale(0.6);
@@ -2121,7 +2125,7 @@ class SpaceShooterScene extends Phaser.Scene {
                     this.tweens.add({
                         targets: en,
                         x: destX,
-                        duration: 3000,
+                        duration: 2600,
                         yoyo: true,
                         repeat: -1
                     });
@@ -2216,7 +2220,7 @@ class SpaceShooterScene extends Phaser.Scene {
 
         // Win Condition SL2
         if (this.subLevel === 2) {
-            if (this.enemiesDestroyed >= 30 && this.shootersDestroyed >= 15) {
+            if (this.enemiesDestroyed >= 30 && this.shootersDestroyed >= 20) {
                 this.game.events.emit('trigger-terminal');
             }
         }
@@ -2276,21 +2280,128 @@ class SpaceShooterScene extends Phaser.Scene {
         });
 
         if (this.boss && Phaser.Math.Distance.Between(this.boss.x, this.boss.y, mine.x, mine.y) < 450) {
-            this.damageBoss(5);
+            this.damageBoss(15);
         }
 
         mine.destroy();
     }
 
     damageBoss(amount) {
-        if (this.bossDead) return;
+        if (this.bossDead || this.bossPhase === 2) return;
         this.boss.hp -= amount;
         this.updateHUD();
         this.cameras.main.shake(200, 0.01);
 
+        // Periodic Retreat Phase starting at 75% HP
+        if (this.boss.hp <= 75 && this.bossPhase === 1) {
+            this.startBossRetreatPhase();
+
+            // Setup recurring retreat every 30 seconds
+            this.retreatLoopEvent = this.time.addEvent({
+                delay: 30000,
+                loop: true,
+                callback: () => {
+                    if (this.bossPhase !== 2 && !this.bossDead) {
+                        this.startBossRetreatPhase();
+                    }
+                }
+            });
+        }
+
         if (this.boss.hp <= 0) {
+            if (this.retreatLoopEvent) this.retreatLoopEvent.destroy();
             this.bossDeathSequence();
         }
+    }
+
+    startBossRetreatPhase() {
+        this.bossPhase = 2; // Retreating
+        this.bossPhaseCycle = 0;
+
+        // Hide boss bar during transition
+        if (this.bossBar) this.bossBar.clear();
+
+        this.tweens.add({
+            targets: this.boss,
+            y: -250,
+            duration: 2000,
+            ease: 'Power2',
+            onComplete: () => {
+                this.triggerBarrageCycle();
+            }
+        });
+    }
+
+    triggerBarrageCycle() {
+        if (this.bossPhaseCycle >= 3) {
+            this.endBossRetreatPhase();
+            return;
+        }
+
+        const { width, height } = this.scale;
+        const warningGraphics = this.add.graphics();
+        warningGraphics.setDepth(100);
+
+        // Define 4 random vertical lanes for the barrage
+        const lanes = [];
+        for (let i = 0; i < 4; i++) {
+            lanes.push(Phaser.Math.Between(100, width - 100));
+        }
+
+        // Show Red Warning Signs
+        let blinkCount = 0;
+        const blinkEvent = this.time.addEvent({
+            delay: 250,
+            repeat: 7, // 2 seconds total (8 blinks)
+            callback: () => {
+                warningGraphics.clear();
+                if (blinkCount % 2 === 0) {
+                    warningGraphics.fillStyle(0xff0000, 0.4);
+                    lanes.forEach(x => {
+                        // Vertical warning strip
+                        warningGraphics.fillRect(x - 30, 0, 60, height);
+                        // Warning symbol container
+                        this.add.text(x, 50, "!", { fontSize: '48px', color: '#ff0000', fontStyle: 'bold' }).setOrigin(0.5).setDepth(101).destroy(250);
+                    });
+                }
+                blinkCount++;
+            }
+        });
+
+        this.time.delayedCall(2100, () => {
+            warningGraphics.clear();
+            // Start Raining Blue Bullets
+            const rainTimer = this.time.addEvent({
+                delay: 50,
+                repeat: 30, // 1.5 seconds of rain
+                callback: () => {
+                    lanes.forEach(x => {
+                        let b = this.bossBullets.create(x + Phaser.Math.Between(-20, 20), -20, 'plasma_2');
+                        b.setVelocityY(Phaser.Math.Between(500, 750));
+                        b.setScale(1.2).setTint(0x00ffff);
+                    });
+                }
+            });
+
+            this.time.delayedCall(2500, () => {
+                this.bossPhaseCycle++;
+                this.triggerBarrageCycle();
+            });
+        });
+    }
+
+    endBossRetreatPhase() {
+        this.tweens.add({
+            targets: this.boss,
+            y: 110,
+            duration: 2000,
+            ease: 'Power2',
+            onComplete: () => {
+                this.bossPhase = 1; // Return to normal state (can trigger again if we change logic, but for now stays in loop)
+                // Actually set to 3 to prevent immediate re-trigger if we just hit 50
+                this.bossPhase = 3;
+            }
+        });
     }
 
     bossDeathSequence() {
