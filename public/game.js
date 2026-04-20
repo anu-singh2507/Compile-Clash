@@ -155,6 +155,7 @@ class MenuScene extends Phaser.Scene {
             }).then(r => r.json()).then(data => {
                 localStorage.setItem('teamId', data.team_id);
                 localStorage.setItem('playerCount', 2);
+                localStorage.removeItem('gameStartTime'); // Clear timer for new registration
                 this.registry.set(REGISTRY_TEAM_ID, data.team_id);
 
                 // Hide registration, show waiting
@@ -169,6 +170,10 @@ class MenuScene extends Phaser.Scene {
 
         if (regBtn) regBtn.onclick = registerAndWait;
         if (startBtn) startBtn.onclick = () => {
+            // Persistent session timer start
+            if (!localStorage.getItem('gameStartTime')) {
+                localStorage.setItem('gameStartTime', Date.now().toString());
+            }
             fetch(`/api/teams/${this.registry.get(REGISTRY_TEAM_ID)}/question`).then(r => r.json()).then(q => {
                 this.registry.set(REGISTRY_MODULE, parseInt(q.current_level) || 1);
                 this.registry.set(REGISTRY_SUBLEVEL, parseInt(q.current_sublevel) || 1);
@@ -288,8 +293,14 @@ class UIScene extends Phaser.Scene {
         this.scene.bringToTop('UIScene');
         this.activeGameplayScene = sceneToLoad;
         this.registry.set(REGISTRY_GAME_RUNNING, false);
-        this.currentState = GameState.PLAYING; // Ensure we are in PLAYING state for the new level
-        this.startTime = Date.now();
+        this.currentState = GameState.PLAYING; 
+        
+        // Use persistent start time from localStorage
+        const storedStartTime = localStorage.getItem('gameStartTime');
+        if (!storedStartTime) {
+            localStorage.setItem('gameStartTime', Date.now().toString());
+        }
+        this.gameStartTime = parseInt(localStorage.getItem('gameStartTime'));
     }
 
     update() { this.updateHUD(this.activeGameplayScene); }
@@ -306,7 +317,13 @@ class UIScene extends Phaser.Scene {
         }
 
         const levelName = levelNames[m] || `MODULE ${m}`;
-        this.hudText.setText(`${levelName}\nSUBLEVEL: 0${sl}`);
+        const elapsed = Math.floor((Date.now() - this.gameStartTime) / 1000);
+        const formatTime = (s) => {
+            const mins = Math.floor(s / 60).toString().padStart(2, '0');
+            const secs = (s % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+        };
+        this.hudText.setText(`${levelName}\nSUBLEVEL: 0${sl}\nTIME: ${formatTime(elapsed)}`);
 
         if (sceneName) this.activeModuleScene = sceneName;
 
@@ -404,7 +421,7 @@ class UIScene extends Phaser.Scene {
     autoAdvance() {
         const id = this.registry.get(REGISTRY_TEAM_ID);
         const { newLevel, newSub } = this.calculateNextLevel();
-        const duration_seconds = Math.floor((Date.now() - this.startTime) / 1000);
+        const duration_seconds = Math.floor((Date.now() - this.gameStartTime) / 1000);
 
         fetch(`/api/teams/${id}/progress`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -558,7 +575,7 @@ class UIScene extends Phaser.Scene {
             this.appendToTerminal(`> UPLOADING LOCAL LOGIC...`);
 
             let id = this.registry.get(REGISTRY_TEAM_ID);
-            const duration_seconds = Math.floor((Date.now() - this.startTime) / 1000);
+            const duration_seconds = Math.floor((Date.now() - this.gameStartTime) / 1000);
 
             fetch(`/api/teams/${id}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ submission: code }) })
                 .then(res => res.json())
@@ -600,9 +617,10 @@ class UIScene extends Phaser.Scene {
                         this.registry.set('nextSub', newSub);
                         this.registry.set('nextMod', newLevel);
 
+                        const duration_seconds = Math.floor((Date.now() - this.gameStartTime) / 1000);
                         fetch(`/api/teams/${id}/progress`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ new_level: newLevel, new_sublevel: newSub, score_increment: 0, duration_seconds: 0 })
+                            body: JSON.stringify({ new_level: newLevel, new_sublevel: newSub, score_increment: 0, duration_seconds })
                         });
                     }
                 });

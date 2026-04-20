@@ -210,7 +210,7 @@ app.post('/api/teams/:id/progress', (req, res) => {
 
     const sql = `UPDATE teams 
                  SET current_level = COALESCE(?, current_level), current_sublevel = COALESCE(?, current_sublevel),
-                     total_score = total_score + ?, active_time_seconds = active_time_seconds + ?
+                     total_score = total_score + ?, active_time_seconds = ?
                  WHERE id = ?`;
 
     db.run(sql, [new_level, new_sublevel, score_increment || 0, duration_seconds || 0, teamId], function(err) {
