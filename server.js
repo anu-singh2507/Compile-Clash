@@ -169,7 +169,9 @@ app.post('/api/admin/reset-game', (req, res) => {
 // Admin: Login
 app.post('/api/admin/login', (req, res) => {
     const { username, password } = req.body;
-    if (username === 'arishk' && password === 'anu2507') {
+    const adminUser = process.env.ADMIN_USER || 'arishk';
+    const adminPass = process.env.ADMIN_PASS || 'anu2507';
+    if (username === adminUser && password === adminPass) {
         res.json({ success: true, message: "Login Successful" });
     } else {
         res.status(401).json({ success: false, message: "Invalid Credentials" });
