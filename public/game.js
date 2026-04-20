@@ -239,7 +239,7 @@ class UIScene extends Phaser.Scene {
     create() {
         this.currentState = GameState.PLAYING;
         this.modules = { 1: 'LevelDevilScene', 2: 'DataFragmentScene', 3: 'DriftRacingScene', 4: 'SpaceShooterScene', 5: 'WinScene' };
-        
+
         // Sync global state from local storage
         globalPlayerCount = parseInt(localStorage.getItem('playerCount')) || 1;
 
@@ -298,7 +298,7 @@ class UIScene extends Phaser.Scene {
         const m = parseInt(this.registry.get(REGISTRY_MODULE));
         const sl = parseInt(this.registry.get(REGISTRY_SUBLEVEL));
         const levelNames = { 1: 'GLITCH GRID', 2: 'DATA FRAGMENT', 3: 'CYBER DRIFT', 4: 'CELESTIAL DEFENDER', 5: 'FINISHED' };
-        
+
         if (m >= 5) {
             this.hudText.setText('');
             if (this.hudHelp) this.hudHelp.classList.add('hidden');
@@ -420,21 +420,21 @@ class UIScene extends Phaser.Scene {
     showWinUI() {
         this.scene.stop(this.activeGameplayScene);
         const { width, height } = this.scale;
-        
+
         // Darken the screen completely
         const overlay = this.add.rectangle(0, 0, width, height, 0x0a0a0c, 1.0).setOrigin(0).setDepth(3000);
-        
-        const style = { 
-            fontSize: '72px', 
-            fill: '#39ff14', 
-            fontStyle: 'bold', 
+
+        const style = {
+            fontSize: '72px',
+            fill: '#39ff14',
+            fontStyle: 'bold',
             fontFamily: 'Courier New',
             align: 'center'
         };
 
         const winText = this.add.text(width / 2, height / 2, 'CONGRATULATIONS!', style).setOrigin(0.5).setDepth(3001).setAlpha(0);
         winText.setShadow(0, 0, '#39ff14', 10);
-        
+
         // Compatible Chained Sequence: CONGRATS -> FUNSCRIPT -> THANKS
         this.tweens.add({
             targets: winText,
@@ -599,7 +599,7 @@ class UIScene extends Phaser.Scene {
                         const { newLevel, newSub } = this.calculateNextLevel();
                         this.registry.set('nextSub', newSub);
                         this.registry.set('nextMod', newLevel);
-                        
+
                         fetch(`/api/teams/${id}/progress`, {
                             method: 'POST', headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ new_level: newLevel, new_sublevel: newSub, score_increment: 0, duration_seconds: 0 })
@@ -803,7 +803,7 @@ class LevelDevilScene extends Phaser.Scene {
         this.levelCompleteTriggered = false;
         this.p1AtPortal = false;
         this.p2AtPortal = false;
-        
+
         // Reset sub-level 3 specific flags
         this.inPhase2 = false;
         this.teleported = false;
@@ -842,21 +842,21 @@ class LevelDevilScene extends Phaser.Scene {
 
         // PLAYER SETUP (Must exist BEFORE generatePath colliders)
         let sx, sy;
-        if (this.subLevel === 1) { sx = 100; sy = height - 120; }
-        else if (this.subLevel === 2) { sx = width - 160; sy = height / 2 + 50; }
-        else { sx = 50; sy = height / 2; }
+        if (this.subLevel === 1) { sx = 100; sy = height - 200; }
+        else if (this.subLevel === 2) { sx = width - 230; sy = height / 2 + 100; }
+        else { sx = 50; sy = height / 2 - 50; }
 
-        this.player1 = this.physics.add.sprite(sx, sy, 'p1').setScale(2.0);
-        this.player1.setCollideWorldBounds(false).body.setSize(18, 28).setOffset(7, 4);
+        this.player1 = this.physics.add.sprite(sx, sy, 'p1').setScale(4.0);
+        this.player1.setCollideWorldBounds(false).body.setSize(18, 28).setOffset(7, 0);
         this.p1Keys = this.input.keyboard.addKeys('W,A,S,D');
 
         if (globalPlayerCount === 2) {
             let p2sx;
-            if (this.subLevel === 1) p2sx = 150;
-            else if (this.subLevel === 2) p2sx = width - 180;
-            else p2sx = 100;
-            this.player2 = this.physics.add.sprite(p2sx, sy, 'p1').setScale(2.0).setTint(0x00ffff);
-            this.player2.setCollideWorldBounds(false).body.setSize(18, 28).setOffset(7, 4);
+            if (this.subLevel === 1) p2sx = 180;
+            else if (this.subLevel === 2) p2sx = width - 260;
+            else p2sx = 150;
+            this.player2 = this.physics.add.sprite(p2sx, sy, 'p1').setScale(4.0).setTint(0x00ffff);
+            this.player2.setCollideWorldBounds(false).body.setSize(18, 28).setOffset(7, 0);
             this.p2Keys = this.input.keyboard.createCursorKeys();
         }
 
@@ -902,50 +902,51 @@ class LevelDevilScene extends Phaser.Scene {
 
         if (this.subLevel === 1) {
             let floorY = height - 32;
-            for (let x = 50; x <= 2500; x += 64) {
+            for (let x = 50; x <= 2700; x += 64) {
                 let rect = this.add.rectangle(x, floorY, 64, 32, 0x00ffff, 0.3);
-                if (x >= 2200 && x < 2264) {
+                if (x >= 2200 && x < 2400) {
                     this.physics.add.existing(rect, false);
                     rect.body.setImmovable(true).setAllowGravity(false);
                     rect.body.moves = false;
                     this.trollGroup.add(rect);
-                    this.trollBlock = rect;
                 } else {
                     this.physics.add.existing(rect, true);
                     this.platforms.add(rect);
-                    if (x >= 2400 && x < 2464) this.portalPlatform = rect;
+                    if (x >= 2600 && x < 2664) this.portalPlatform = rect;
                 }
             }
-            this.portal = this.physics.add.staticSprite(2400, height - 100, 'portal', 0).setScale(1.5).setTint(0x00ffff);
+            this.portal = this.physics.add.staticSprite(2650, height - 120, 'portal', 0).setScale(2.5).setTint(0x00ffff);
+            this.trapTriggered = false;
         } else if (this.subLevel === 2) {
             // SUB-LEVEL 2: 'NO-JUMP' CORRIDOR & NARROW PIT
             const centerY = height / 2;
-            const floorY = centerY + 50;
-            const ceilingY = floorY - 150; // Increased height for 2x player scaling
-            const pitX = width - 200;
-            const pitW = 80;
+            const floorY = centerY + 100;
+            const ceilingY = floorY - 250;
+            const rightWallW = 150;
+            const pitW = 160;
+            const pitX = width - rightWallW - pitW;
 
             // 1. Teal Maze Walls (Main Boundaries)
-            let topWall = this.add.rectangle(width / 2, ceilingY - 120, width, 310, 0x00ffff, 0.3);
+            let topWall = this.add.rectangle(width / 2, ceilingY - 150, width, 300, 0x00ffff, 0.3);
             this.physics.add.existing(topWall, true); this.platforms.add(topWall);
-            let floorWall = this.add.rectangle(((width - 200)) / 2, floorY + 160, (width - 200), 315, 0x00ffff, 0.3);
+            let floorWall = this.add.rectangle(pitX / 2, floorY + 160, pitX, 315, 0x00ffff, 0.3);
             this.physics.add.existing(floorWall, true); this.platforms.add(floorWall);
-            this.pitFloorY = floorY + 60;
-            let pitFloor = this.add.rectangle(pitX + pitW / 2, this.pitFloorY + 150, pitW, 250, 0x00ffff, 0.3);
+            this.pitFloorY = floorY + 130;
+            let pitFloor = this.add.rectangle(pitX + pitW / 2, this.pitFloorY + 150, pitW, 300, 0x00ffff, 0.3);
             this.physics.add.existing(pitFloor, true); this.platforms.add(pitFloor);
-            let pitRight = this.add.rectangle(pitX + pitW + 60, centerY, 120, height, 0x00ffff, 0.3);
+            let pitRight = this.add.rectangle(pitX + pitW + rightWallW / 2, centerY, rightWallW, height, 0x00ffff, 0.3);
             this.physics.add.existing(pitRight, true); this.platforms.add(pitRight);
             let pitLeft = this.add.rectangle(pitX - 5, floorY + 30, 10, 60, 0x00ffff, 0.3);
             this.physics.add.existing(pitLeft, true); this.platforms.add(pitLeft);
-            this.portal = this.physics.add.staticSprite(150, floorY - 30, 'portal', 0).setScale(1.5).setTint(0xffff00);// Invisible Physics Boundaries (The Yellow Path)
-            // Ceiling (Strictly no jumping)
-            let invCeil = this.add.rectangle((150 + (width - 120)) / 2, ceilingY, (width - 120) - 150, 10, 0x00ffff, 0);
+            
+            // Invisible Physics Boundaries (The Yellow Path)
+            let invCeil = this.add.rectangle((150 + pitX) / 2, ceilingY, pitX - 150, 10, 0x00ffff, 0);
             this.physics.add.existing(invCeil, true); this.platforms.add(invCeil);
             // Main Floor
-            let invFloor = this.add.rectangle((150 + (width - 200)) / 2, floorY, (width - 200) - 150, 10, 0x00ffff, 0);
+            let invFloor = this.add.rectangle((150 + pitX) / 2, floorY, pitX - 150, 10, 0x00ffff, 0);
             this.physics.add.existing(invFloor, true); this.platforms.add(invFloor);
 
-            this.portal = this.physics.add.staticSprite(150, floorY - 30, 'portal', 0).setScale(1.5);
+            this.portal = this.physics.add.staticSprite(150, floorY - 40, 'portal', 0).setScale(2.0);
             this.portal.anims.play('portal_swirl', true).setTint(0x00ffff);
 
             this.floorY = floorY; // Store for wave logic
@@ -956,39 +957,39 @@ class LevelDevilScene extends Phaser.Scene {
             this.floorY = floorY;
 
             // 1. Phase 1: Broken Bridge (Neon Cyan Rects)
-            let mainFloor = this.add.rectangle(750, floorY + 100, 1500, 200, 0x00ffff, 0.3);
+            let mainFloor = this.add.rectangle(1225, floorY + 100, 2450, 200, 0x00ffff, 0.3);
             this.physics.add.existing(mainFloor, true); this.platforms.add(mainFloor);
-            let landingPad = this.add.rectangle(1800, floorY + 100, 200, 200, 0x00ffff, 0.3);
+            let landingPad = this.add.rectangle(2800, floorY + 100, 200, 200, 0x00ffff, 0.3);
             this.physics.add.existing(landingPad, true); this.platforms.add(landingPad);
 
             // 3. Troll Spikes (Hidden in Landing Pad)
             this.trollSpikesGroup = this.physics.add.staticGroup();
-            for (let x = 1710; x <= 1780; x += 25) {
+            for (let x = 2710; x <= 2780; x += 25) {
                 let spike = this.trollSpikesGroup.create(x, floorY + 15, 'spike-sprite').setScale(0.5);
                 spike.setVisible(false); // Hide initially
                 if (spike.body) spike.body.enable = false; // Disable hitbox initially
             }
 
             // Yellow Portal (SL 1-2 Phase 2)
-            this.portal = this.physics.add.staticSprite(1850, floorY - 30, 'portal', 0).setScale(1.5).setTint(0xffff00);
+            this.portal = this.physics.add.staticSprite(2850, floorY - 40, 'portal', 0).setScale(2.0).setTint(0xffff00);
             this.portal.anims.play('portal_swirl', true);
 
             // 5. Phase 2 Section (The Destination: 850px wide)
             this.phase2Spikes = this.physics.add.staticGroup();
 
             // Outer Walls
-            let leftWall = this.add.rectangle(2980, 400, 20, 1000, 0x00ffff, 0.3);
+            let leftWall = this.add.rectangle(2980, 600, 20, 1500, 0x00ffff, 0.3);
             this.physics.add.existing(leftWall, true); this.platforms.add(leftWall);
-            let rightWall = this.add.rectangle(3870, 400, 20, 1000, 0x00ffff, 0.3);
+            let rightWall = this.add.rectangle(3870, 600, 20, 1500, 0x00ffff, 0.3);
             this.physics.add.existing(rightWall, true); this.platforms.add(rightWall);
 
-            // Zig-Zag Platforms (Extra tier + Tight 120px gaps)
+            // Zig-Zag Platforms (Spaced by 200px for 4x character height)
             const pConfigs = [
-                { x: 3325, y: 150, w: 650 }, // Tier 1: Gap Right
-                { x: 3525, y: 270, w: 650 }, // Tier 2: Gap Left
-                { x: 3325, y: 390, w: 650 }, // Tier 3: Gap Right
-                { x: 3525, y: 510, w: 650 }, // Tier 4: Gap Left
-                { x: 3425, y: 630, w: 850 }  // Bottom Floor (3000 to 3850)
+                { x: 3325, y: 300, w: 650 }, // Tier 1: Gap Right
+                { x: 3525, y: 500, w: 650 }, // Tier 2: Gap Left
+                { x: 3325, y: 700, w: 650 }, // Tier 3: Gap Right
+                { x: 3525, y: 900, w: 650 }, // Tier 4: Gap Left
+                { x: 3425, y: 1100, w: 850 } // Bottom Floor (3000 to 3850)
             ];
             pConfigs.forEach(p => {
                 let rect = this.add.rectangle(p.x, p.y + 10, p.w, 20, 0x00ffff, 0.3);
@@ -997,12 +998,12 @@ class LevelDevilScene extends Phaser.Scene {
 
             // Spike Bed at Bottom (3600 to 3850)
             for (let x = 3610; x <= 3850; x += 25) {
-                let spike = this.phase2Spikes.create(x, 630 - 15, 'spike-sprite').setScale(0.25);
+                let spike = this.phase2Spikes.create(x, 1100 - 15, 'spike-sprite').setScale(0.25);
                 spike.body.setSize(4, 4).setOffset(14, 14);
             }
 
             // RED PORTAL (Final Gate)
-            this.redPortal = this.physics.add.staticSprite(3050, 580, 'portal', 0).setScale(1.5).setTint(0xff0000);
+            this.redPortal = this.physics.add.staticSprite(3050, 1050, 'portal', 0).setScale(2.0).setTint(0xff0000);
             this.redPortal.anims.play('portal_swirl', true);
             this.redPortalMovementStarted = false;
         }
@@ -1031,12 +1032,12 @@ class LevelDevilScene extends Phaser.Scene {
         if (this.scene.get('UIScene').currentState !== GameState.PLAYING) return;
 
         let p1XVel = 0; let p2XVel = 0;
-        if (this.p1Keys.A.isDown) p1XVel = -200;
-        else if (this.p1Keys.D.isDown) p1XVel = 200;
+        if (this.p1Keys.A.isDown) p1XVel = -300;
+        else if (this.p1Keys.D.isDown) p1XVel = 300;
 
         if (globalPlayerCount === 2 && this.p2Keys) {
-            if (this.p2Keys.left.isDown) p2XVel = -200;
-            else if (this.p2Keys.right.isDown) p2XVel = 200;
+            if (this.p2Keys.left.isDown) p2XVel = -300;
+            else if (this.p2Keys.right.isDown) p2XVel = 300;
         }
 
         if (!this.hasMovedForward && (p1XVel > 0 || p2XVel > 0)) this.hasMovedForward = true;
@@ -1050,7 +1051,7 @@ class LevelDevilScene extends Phaser.Scene {
 
         if (!this.player1.isDying) {
             if (Phaser.Input.Keyboard.JustDown(this.p1Keys.W) && (p1TouchesDown || (this.time.now - this.player1.lastGroundedTime < 100))) {
-                this.player1.setVelocityY(-450);
+                this.player1.setVelocityY(-550);
                 this.player1.anims.play('p1_jump', true);
             } else if (p1TouchesDown) {
                 // ✅ Only play idle/walk on ground — never overwrite jump while airborne
@@ -1068,7 +1069,7 @@ class LevelDevilScene extends Phaser.Scene {
 
             if (!this.player2.isDying) {
                 if (Phaser.Input.Keyboard.JustDown(this.p2Keys.up) && (p2TouchesDown || (this.time.now - this.player2.lastGroundedTime < 100))) {
-                    this.player2.setVelocityY(-450);
+                    this.player2.setVelocityY(-550);
                     this.player2.anims.play('p1_jump', true);
                 } else if (p2TouchesDown) {
                     // ✅ Only play idle/walk on ground
@@ -1080,20 +1081,18 @@ class LevelDevilScene extends Phaser.Scene {
         // Section 4: Triggered Simple Decay
         if (this.subLevel === 1) {
             if (this.hasMovedForward) {
-                this.decayX += 0.8;
+                this.decayX += 1.4;
                 this.platforms.getChildren().forEach(p => {
                     if (p.x < this.decayX && p !== this.portalPlatform) p.destroy();
                 });
             }
-            if (this.trollBlock && this.trollBlock.active && !this.trollBlock.isTriggered) {
-                if (this.player1.x > 1800 || (this.player2 && this.player2.x > 1800)) {
-                    let p1Dist = Math.abs(this.player1.x - this.trollBlock.x);
-                    let p2Dist = (globalPlayerCount === 2 && this.player2) ? Math.abs(this.player2.x - this.trollBlock.x) : 999;
-                    if (p1Dist < 80 || p2Dist < 80) {
-                        this.trollBlock.isTriggered = true;
-                        this.trollBlock.body.moves = true;
-                        this.trollBlock.body.setImmovable(false).setAllowGravity(true).setVelocityY(600);
-                    }
+            if (!this.trapTriggered && this.trollGroup.getChildren().length > 0) {
+                if (this.player1.x > 2120 || (this.player2 && this.player2.active && this.player2.x > 2120)) {
+                    this.trapTriggered = true;
+                    this.trollGroup.getChildren().forEach(block => {
+                        block.body.moves = true;
+                        block.body.setImmovable(false).setAllowGravity(true).setVelocityY(600);
+                    });
                 }
             }
 
@@ -1116,7 +1115,7 @@ class LevelDevilScene extends Phaser.Scene {
                         if (this.p1DeathFlag) return;
                         if (this.wave1X > width + 50) { if (this.wave1Event) this.wave1Event.remove(); this.mazePhase = 1; return; }
                         this.spawnWaveSpike(this.wave1X, this.floorY);
-                        this.wave1X += 25;
+                        this.wave1X += 35;
                     },
                     loop: true
                 });
@@ -1131,7 +1130,7 @@ class LevelDevilScene extends Phaser.Scene {
                         if (this.wave2X < 0) { if (this.wave2Event) this.wave2Event.remove(); return; }
                         let targetY = (this.wave2X > width - 200 && this.wave2X < width - 120) ? this.pitFloorY : this.floorY;
                         this.spawnWaveSpike(this.wave2X, targetY);
-                        this.wave2X -= 30;
+                        this.wave2X -= 40;
                     },
                     loop: true
                 });
@@ -1152,6 +1151,17 @@ class LevelDevilScene extends Phaser.Scene {
                 }
             }
 
+            // Troll Red Portal (Moves across spikes)
+            let p1Moved = Math.abs(this.player1.x - 3050) > 10;
+            let p2Moved = this.player2 ? Math.abs(this.player2.x - 3090) > 10 : false;
+            if (this.inPhase2 && (p1Moved || p2Moved) && !this.redPortalMovementStarted) {
+                this.redPortalMovementStarted = true;
+                this.tweens.add({ 
+                    targets: this.redPortal, x: 3800, duration: 25000, ease: 'Linear',
+                    onUpdate: () => { if (this.redPortal && this.redPortal.active) this.redPortal.refreshBody(); }
+                });
+            }
+
             // B. Shared Terminal (Red Portal -> Terminal)
             if (this.inPhase2 && this.redPortal) {
                 let p1In = this.physics.overlap(this.player1, this.redPortal);
@@ -1169,17 +1179,17 @@ class LevelDevilScene extends Phaser.Scene {
                     delay: 150,
                     callback: () => {
                         if (this.p1DeathFlag) return;
-                        if (this.chasingX >= 1350) { if (this.chasingEvent) this.chasingEvent.remove(); return; }
+                        if (this.chasingX >= 2350) { if (this.chasingEvent) this.chasingEvent.remove(); return; }
                         this.spawnWaveSpike(this.chasingX, floorY, true, true);
-                        this.chasingX += 20;
+                        this.chasingX += 35;
                     },
                     loop: true
                 });
             }
 
             if (!this.trollSpikesTriggered) {
-                let p1Mid = this.player1.x > 1550 && this.player1.x < 1650;
-                let p2Mid = (this.player2) ? (this.player2.x > 1550 && this.player2.x < 1650) : false;
+                let p1Mid = this.player1.x > 2550 && this.player1.x < 2650;
+                let p2Mid = (this.player2) ? (this.player2.x > 2550 && this.player2.x < 2650) : false;
                 if (p1Mid || p2Mid) {
                     this.trollSpikesTriggered = true;
                     this.trollSpikesGroup.getChildren().forEach(s => {
@@ -1216,9 +1226,10 @@ class LevelDevilScene extends Phaser.Scene {
             this.cameras.main.scrollX += (targetX - width / 2 - this.cameras.main.scrollX) * 0.1;
         }
 
-        if (this.player1.y > this.scale.height) {
+        let maxDepth = (this.subLevel === 3 && this.inPhase2) ? 1500 : this.scale.height;
+        if (this.player1.y > maxDepth) {
             this.handleDeath(this.player1);
-        } else if (this.player2 && this.player2.y > this.scale.height) {
+        } else if (this.player2 && this.player2.y > maxDepth) {
             this.handleDeath(this.player2);
         }
 
@@ -1308,11 +1319,11 @@ class LevelDevilScene extends Phaser.Scene {
             if (this.inPhase2) {
                 sx = 3050; sy = 100;
             } else if (this.subLevel === 1) {
-                sx = 100; sy = height - 120;
+                sx = 100; sy = height - 200;
             } else if (this.subLevel === 2) {
-                sx = width - 160; sy = height / 2 + 50;
+                sx = width - 230; sy = height / 2 + 100;
             } else {
-                sx = 50; sy = centerY;
+                sx = 100; sy = height / 2 - 50;
             }
 
             this.player1.setPosition(sx, sy).setVelocity(0, 0).clearTint().setActive(true).setVisible(true);
@@ -1352,8 +1363,8 @@ class LevelDevilScene extends Phaser.Scene {
         this.player1.setPosition(tx, ty).setVelocity(0, 0);
         if (this.player2) this.player2.setPosition(tx + 40, ty).setVelocity(0, 0);
 
-        this.physics.world.setBounds(0, 0, 5000, 1500);
-        this.cameras.main.setBounds(0, -200, 5000, 1500);
+        this.physics.world.setBounds(0, -1000, 5000, 2500);
+        this.cameras.main.setBounds(0, -500, 5000, 2500);
         this.cameras.main.scrollX = tx - (this.scale.width / 2);
         this.cameras.main.scrollY = 0;
         this.cameras.main.flash(500, 255, 255, 0);
@@ -1439,7 +1450,7 @@ class DataFragmentScene extends Phaser.Scene {
                 this.piecesPlaced++;
 
                 if (this.piecesPlaced === totalPieces) {
-                    this.add.text(width / 2, height / 2 - 80, '> DATA RESTORED <', { 
+                    this.add.text(width / 2, height / 2 - 80, '> DATA RESTORED <', {
                         fontSize: '48px', fill: '#39ff14', fontStyle: 'bold', fontFamily: 'Courier New', backgroundColor: '#000000'
                     }).setOrigin(0.5).setDepth(2001);
                     this.time.delayedCall(1500, () => {
@@ -1673,7 +1684,7 @@ class DriftRacingScene extends Phaser.Scene {
         container.body.setMaxVelocity(350);
         container.body.setDamping(true);
         container.body.setDrag(0.98);
-        container.body.setBounce(0.2);
+        container.body.setBounce(0.55);
         const carW = sprite.displayWidth * 0.6;
         const carH = sprite.displayHeight * 0.6;
         container.body.setSize(carW, carH);
@@ -1832,8 +1843,8 @@ class DriftRacingScene extends Phaser.Scene {
             if (this.p1.laps >= 5 && (globalPlayerCount < 2 || this.p2.laps >= 5) && !this.raceComplete) {
                 this.raceComplete = true;
                 const { width, height } = this.scale;
-                this.add.text(width / 2, height / 2 - 80, '> RACE COMPLETE <', { 
-                    fontSize: '64px', fill: '#39ff14', fontStyle: 'bold', backgroundColor: '#000000' 
+                this.add.text(width / 2, height / 2 - 80, '> RACE COMPLETE <', {
+                    fontSize: '64px', fill: '#39ff14', fontStyle: 'bold', backgroundColor: '#000000'
                 }).setOrigin(0.5).setScrollFactor(0).setDepth(2001);
                 console.log("RACE FINISHED - EMITTING TERMINAL TRIGGER");
                 this.time.delayedCall(1500, () => this.game.events.emit('trigger-terminal'));
@@ -2042,7 +2053,7 @@ class SpaceShooterScene extends Phaser.Scene {
 
     spawnEnemy() {
         if (this.subLevel === 3 && this.boss.hp <= 50) return; // Stop ships in final phases
-        
+
         // Spawn standard Crashing ship
         if (this.subLevel === 1 || (this.subLevel === 2 && this.crashingSpawned < 30) || (this.subLevel === 3 && this.boss.hp > 50)) {
             let x = Phaser.Math.Between(50, this.scale.width - 50);
@@ -2051,7 +2062,7 @@ class SpaceShooterScene extends Phaser.Scene {
             en.baseKey = `enemy_${variant}`;
             en.lastShot = 0;
             this.crashingSpawned++;
-            
+
             // Randomly spawn a shooter along with crashing ships in later levels
             if (this.subLevel >= 2 && Math.random() > 0.7) {
                 this.spawnShooter();
