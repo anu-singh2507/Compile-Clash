@@ -239,6 +239,9 @@ class UIScene extends Phaser.Scene {
     create() {
         this.currentState = GameState.PLAYING;
         this.modules = { 1: 'LevelDevilScene', 2: 'DataFragmentScene', 3: 'DriftRacingScene', 4: 'SpaceShooterScene', 5: 'WinScene' };
+        
+        // Sync global state from local storage
+        globalPlayerCount = parseInt(localStorage.getItem('playerCount')) || 1;
 
         // Global Instruction Trigger
         this.manualOverlay = document.getElementById('instruction-overlay');
@@ -1552,7 +1555,13 @@ class DriftRacingScene extends Phaser.Scene {
         this.raceTimeText = this.add.text(0, 50, 'TOTAL: 00:00', { fontSize: '22px', fill: '#ffffff', fontFamily: 'Courier New', fontWeight: 'bold' }).setOrigin(0.5);
         this.centerHUD.add([this.hudBg, this.hudTitle, this.p1Stats, this.p2Stats, this.raceTimeText]);
 
-        // Finish Line (Extended to cover full track width)
+        this.raceComplete = false;
+        this.p1Finished = false;
+        this.p2Finished = false;
+        this.p1FinalTime = "";
+        this.p2FinalTime = "";
+
+        // Finish Line
         this.lapLine = this.add.rectangle(width / 2, b, 50, 250, 0x39ff14, 0.5);
         this.physics.add.existing(this.lapLine, true);
         this.checkpoint = this.add.rectangle(width / 2, t, 50, 250, 0x000000, 0);
@@ -1665,12 +1674,9 @@ class DriftRacingScene extends Phaser.Scene {
         container.body.setDamping(true);
         container.body.setDrag(0.98);
         container.body.setBounce(0.2);
-        // ✅ Use a smaller, squarer body to minimize the rotation mismatch
-        // sprite.displayWidth accounts for spriteScale unlike sprite.width
         const carW = sprite.displayWidth * 0.6;
         const carH = sprite.displayHeight * 0.6;
         container.body.setSize(carW, carH);
-        // Center it on the container origin
         container.body.setOffset(-carW / 2, -carH / 2);
 
         container.ctrls = keys;
@@ -1698,7 +1704,6 @@ class DriftRacingScene extends Phaser.Scene {
         this.driveCar(this.p1, this.p1.ctrls.W, this.p1.ctrls.S, this.p1.ctrls.A, this.p1.ctrls.D);
         this.driveCar(this.p2, this.p2.ctrls.up, this.p2.ctrls.down, this.p2.ctrls.left, this.p2.ctrls.right);
 
-        // 1. Dynamic Scanning Grid
         const { width, height } = this.scale;
         this.gridGraphics.clear();
         this.gridGraphics.lineStyle(1, 0x00ffff, 0.15);
@@ -1714,18 +1719,33 @@ class DriftRacingScene extends Phaser.Scene {
         }
         this.gridGraphics.strokePath();
 
-        this.gridGraphics.strokePath();
-
         // 2. Center HUD Updates
-        const elapsed = (this.time.now - this.startTime) / 1000;
-        const mm = Math.floor(elapsed / 60).toString().padStart(2, '0');
-        const ss = Math.floor(elapsed % 60).toString().padStart(2, '0');
-        this.raceTimeText.setText(`TOTAL: ${mm}:${ss}`);
+        if (!this.raceComplete) {
+            const elapsed = (this.time.now - this.startTime) / 1000;
+            const mm = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const ss = Math.floor(elapsed % 60).toString().padStart(2, '0');
+            this.raceTimeText.setText(`TOTAL: ${mm}:${ss}`);
+        }
 
-        const p1LapTime = (this.time.now - this.p1LapStart) / 1000;
-        const p2LapTime = (this.time.now - this.p2LapStart) / 1000;
-        this.p1Stats.setText(`P1 - LAP: ${this.p1.laps + 1}/5 | TIME: ${p1LapTime.toFixed(1)}s`);
-        this.p2Stats.setText(`P2 - LAP: ${this.p2.laps + 1}/5 | TIME: ${p2LapTime.toFixed(1)}s`);
+        if (!this.p1Finished) {
+            const p1LapTime = (this.time.now - this.p1LapStart) / 1000;
+            this.p1Stats.setText(`P1 - LAP: ${this.p1.laps + 1}/5 | TIME: ${p1LapTime.toFixed(1)}s`);
+            if (this.p1.laps >= 5) {
+                this.p1Finished = true;
+                this.p1FinalTime = p1LapTime.toFixed(1);
+                this.p1Stats.setText(`P1 - FINISHED | TIME: ${this.p1FinalTime}s`);
+            }
+        }
+
+        if (!this.p2Finished) {
+            const p2LapTime = (this.time.now - this.p2LapStart) / 1000;
+            this.p2Stats.setText(`P2 - LAP: ${this.p2.laps + 1}/5 | TIME: ${p2LapTime.toFixed(1)}s`);
+            if (this.p2.laps >= 5) {
+                this.p2Finished = true;
+                this.p2FinalTime = p2LapTime.toFixed(1);
+                this.p2Stats.setText(`P2 - FINISHED | TIME: ${this.p2FinalTime}s`);
+            }
+        }
 
         // Dynamic Headlight Math for Sub-level 3
         if (this.subLevel === 3 && this.visionMask) {
