@@ -30,6 +30,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
         )`, (err) => {
             if (err) console.error("Error creating team_codes table", err.message);
         });
+
+        db.run(`CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )`, (err) => {
+            if (err) return;
+            // Initialize game_started if not exists
+            db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('game_started', 'false')`);
+        });
     }
 });
 

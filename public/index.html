@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COMPILE CLASH</title>
+    <title>FUNSCRIPT</title>
     <link rel="stylesheet" href="style.css">
     <!-- Phaser 3 via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
@@ -11,21 +11,43 @@
 <body>
     <div id="game-container"></div>
     
+    <!-- Instruction Overlay -->
+    <div id="instruction-overlay" class="hidden">
+        <div class="manual-content">
+            <h1 id="manual-title">MANUAL: [MODULE]</h1>
+            <div id="manual-body" class="manual-body"></div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="btn-manual-restart" class="cyber-button" style="flex: 1; border-color: var(--neon-pink); color: var(--neon-pink);">[ RESTART SUB-LEVEL ]</button>
+                <button id="btn-manual-dismiss" class="cyber-button" style="flex: 1; border-color: var(--neon-green); color: var(--neon-green);">[ DISMISS & INITIALIZE ]</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- HUD Help Trigger -->
+    <div id="hud-help-trigger" class="hidden">
+        <button id="btn-show-help" class="help-circle">?</button>
+    </div>
+    
     <!-- Menu Login Overlay -->
     <div id="login-overlay" class="hidden">
         <div class="login-content" id="login-main-panel">
-            <h1 class="neon-glow text-center">COMPILE CLASH</h1>
-            <p class="sys-msg text-center">LOCAL UPLINK SELECTION</p>
+            <h1 class="neon-glow text-center">FUNSCRIPT</h1>
+            <p class="sys-msg text-center" id="login-status-msg">SYSTEM ACCESS REGISTRATION</p>
             
             <div id="create-team-section">
                 <div class="terminal-input login-input-wrapper">
-                    <span class="prompt">NAME></span>
-                    <input type="text" id="team-name-input" autocomplete="off" placeholder="e.g. Cyber Ninjas" />
+                    <span class="prompt">TEAM NAME></span>
+                    <input type="text" id="team-name-input" autocomplete="off" placeholder="Type name..." />
                 </div>
                 
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button id="btn-1player" class="cyber-button w-100" style="padding:15px; border-color:var(--neon-green); color:var(--neon-green)">1-PLAYER</button>
-                    <button id="btn-2player" class="cyber-button w-100" style="padding:15px; border-color:var(--neon-pink); color:var(--neon-pink)">2-PLAYER</button>
+                <div id="reg-button-container" style="margin-top: 15px;">
+                    <button id="btn-register" class="cyber-button w-100" style="padding:15px; border-color:var(--neon-blue); color:var(--neon-blue)">REGISTER TEAM (2-PLAYER)</button>
+                </div>
+                
+                <div id="wait-section" class="hidden text-center" style="margin-top: 20px;">
+                    <p class="sys-msg flashing-text">> UPLINK SECURED. AWAITING ADMIN START SIGNAL...</p>
+                    <div class="loader-bar"></div>
+                    <button id="btn-start-session" class="cyber-button hidden" style="margin-top: 20px; border-color:var(--neon-green); color:var(--neon-green)">[ ENTER FUNSCRIPT ]</button>
                 </div>
             </div>
             
@@ -38,16 +60,16 @@
             <h3>[ SYSTEM OVERRIDE TERMINAL ]</h3>
         </div>
         <div class="terminal-body" id="terminal-body">
-            <!-- Messages dynamically populated here -->
             <p class="sys-msg">> SYSTEM HALTED.</p>
             <p class="sys-msg">> AWAITING CODE INPUT FOR DATA BLOCK DECRYPTION...</p>
         </div>
         <div class="terminal-input">
-            <span class="prompt">CODE></span>
-            <textarea id="command-input" rows="3" placeholder="Type your js code here..."></textarea>
+            <span class="prompt">FUNSCRIPT></span>
+            <textarea id="command-input" rows="3" placeholder="Input sequence code..."></textarea>
         </div>
         <div class="terminal-footer">
             <button id="submit-code-btn" class="cyber-button">EXECUTE SEQUENCE</button>
+            <button id="skip-code-btn" class="cyber-button hidden" style="border-color: #ff9500; color: #ff9500; margin-left: 10px;">SKIP FOR TESTING</button>
             <div id="next-level-container" class="hidden" style="margin-top: 15px;">
                 <p class="success-msg">ACCESS GRANTED. BLOCK DECRYPTED.</p>
                 <button id="next-level-btn" class="cyber-button" style="border-color: #39ff14; color: #39ff14;">INITIATE NEXT MODULE</button>
@@ -55,7 +77,31 @@
         </div>
     </div>
 
+    <!-- Question/Quiz Overlay (New for Phase 6) -->
+    <div id="compile-clash-quiz" class="hidden">
+        <div class="terminal-header">
+            <h3>[ EDUCATIONAL MODULE: MCQ CHALLENGE ]</h3>
+        </div>
+        <div class="quiz-progress-bar" id="quiz-progress" style="padding: 10px; color: var(--neon-blue); font-family: 'Courier New';">Progress: 0/15 | Correct: 0</div>
+        <div class="terminal-body" id="quiz-body">
+            <p class="sys-msg" id="quiz-question-text">> QUESTION LOADING...</p>
+            <div id="quiz-options-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                <!-- A, B, C, D Buttons will be here -->
+            </div>
+        </div>
+        <div class="terminal-footer">
+            <div style="display: flex; gap: 10px;">
+                <button id="quiz-next-btn" class="cyber-button hidden" style="flex: 1;">NEXT QUESTION</button>
+                <button id="quiz-skip-btn" class="cyber-button" style="border-color: #ff9500; color: #ff9500;">SKIP FOR TESTING</button>
+            </div>
+            <div id="quiz-result-container" class="hidden" style="margin-top: 15px;">
+                <p id="quiz-final-msg"></p>
+                <button id="quiz-finish-btn" class="cyber-button" style="border-color: #39ff14; color: #39ff14; width: 100%;">CONTINUE TO NEXT MODULE</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Core Game Logic -->
-    <script src="game.js"></script>
+    <script src="game.js?v=2"></script>
 </body>
 </html>

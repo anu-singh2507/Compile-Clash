@@ -3,91 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COMPILE CLASH LEADERBOARD</title>
+    <title>FUNSCRIPT LEADERBOARD</title>
     <link rel="stylesheet" href="style.css">
     <style>
         body {
             background-color: #020202;
             background-image: 
-                radial-gradient(circle at 15% 50%, rgba(0, 243, 255, 0.05), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(255, 0, 234, 0.05), transparent 25%);
+                radial-gradient(circle at 15% 50%, rgba(0, 243, 255, 0.08), transparent 30%),
+                radial-gradient(circle at 85% 30%, rgba(255, 0, 234, 0.08), transparent 30%);
+            font-family: 'Courier New', Courier, monospace;
         }
         .leaderboard-title {
             text-align: center;
-            font-size: 60px;
-            margin-top: 30px;
+            font-size: 50px;
+            margin-top: 40px;
             color: var(--neon-blue);
-            text-shadow: 0 0 20px var(--neon-blue);
-            letter-spacing: 5px;
+            text-shadow: 0 0 15px var(--neon-blue);
+            letter-spacing: 10px;
         }
         .leaderboard-container {
-            width: 80%;
-            max-height: 80vh;
+            width: 90%;
+            max-width: 1000px;
+            margin: 50px auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 15, 15, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            max-height: 70vh;
             overflow-y: auto;
-            margin: 40px auto;
-            border: 2px solid var(--neon-pink);
-            box-shadow: 0 0 30px rgba(255, 0, 234, 0.2);
-            background: rgba(10, 10, 10, 0.9);
-            border-radius: 8px;
-            padding: 20px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 28px;
-            text-align: center;
         }
         th {
+            text-align: left;
+            padding: 20px;
             color: var(--neon-pink);
-            border-bottom: 2px solid var(--neon-pink);
-            padding: 15px;
+            font-size: 14px;
+            letter-spacing: 3px;
+            border-bottom: 1px solid rgba(255, 0, 234, 0.3);
             text-transform: uppercase;
-            letter-spacing: 2px;
         }
         td {
-            color: white;
-            padding: 15px;
-            border-bottom: 1px solid #222;
+            padding: 20px;
+            color: #ddd;
+            font-size: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
         
-        .rank-glow {
-            font-weight: bold;
-            color: var(--neon-green);
-            text-shadow: 0 0 10px var(--neon-green);
+        .rank-col { width: 10%; color: var(--neon-blue); font-weight: bold; }
+        .team-col { width: 40%; color: white; font-size: 24px; }
+        .progress-col { width: 25%; color: #ffd700; opacity: 0.9; }
+        .time-col { width: 25%; font-family: 'Courier New'; color: var(--neon-green); }
+
+        /* Row Hover & Highlights */
+        tr:hover td { background: rgba(255, 255, 255, 0.03); }
+        
+        .top-1 { color: #ffd700 !important; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .top-2 { color: #e5e4e2 !important; }
+        .top-3 { color: #cd7f32 !important; }
+
+        .sys-scan {
+            font-size: 12px;
+            color: #444;
+            text-align: center;
+            margin-top: 20px;
+            letter-spacing: 2px;
         }
-
-        /* Top 3 Highlighting */
-        tr:nth-child(1) td { color: #ffd700; text-shadow: 0 0 15px #ffd700; font-size: 36px; }
-        tr:nth-child(2) td { color: #c0c0c0; text-shadow: 0 0 10px #c0c0c0; font-size: 32px; }
-        tr:nth-child(3) td { color: #cd7f32; text-shadow: 0 0 10px #cd7f32; font-size: 30px; }
-
     </style>
 </head>
 <body>
 
-    <h1 class="leaderboard-title">GLOBAL SYSTEM RANKINGS</h1>
+    <h1 class="leaderboard-title">SYSTEM RANKINGS</h1>
     
     <div class="leaderboard-container">
         <table>
             <thead>
                 <tr>
-                    <th>RANK</th>
+                    <th style="text-align:center">#</th>
                     <th>TEAM ALIAS</th>
-                    <th>MODULE</th>
+                    <th>SYSTEM PROGRESS</th>
                     <th>ACTIVE TIME</th>
                 </tr>
             </thead>
-            <tbody id="lb-body">
-                <!-- Dynamically Populated -->
-            </tbody>
+            <tbody id="lb-body"></tbody>
         </table>
+        <div class="sys-scan">LIVE SYSTEM SCAN IN PROGRESS... [UPDATED EVERY 5S]</div>
     </div>
 
     <script>
         function formatTime(seconds) {
-            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
             const s = (seconds % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
+            return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
         }
 
         async function fetchLeaderboard() {
@@ -100,21 +112,21 @@
                 
                 teams.forEach((team, index) => {
                     const tr = document.createElement('tr');
+                    const rankClass = index === 0 ? 'top-1' : (index === 1 ? 'top-2' : (index === 2 ? 'top-3' : ''));
                     
                     tr.innerHTML = `
-                        <td class="rank-glow">#${index + 1}</td>
-                        <td>${team.team_name}</td>
-                        <td>${team.current_level} - ${team.current_sublevel}</td>
-                        <td>${formatTime(team.active_time_seconds)}</td>
+                        <td class="rank-col ${rankClass}" style="text-align:center">${index + 1}</td>
+                        <td class="team-col">${team.team_name.toUpperCase()}</td>
+                        <td class="progress-col">LEVEL ${team.current_level} - S0${team.current_sublevel}</td>
+                        <td class="time-col">${formatTime(team.active_time_seconds)}</td>
                     `;
                     tbody.appendChild(tr);
                 });
             } catch (err) {
-                console.error("Leaderboard fetch failed", err);
+                console.error("Link fail", err);
             }
         }
 
-        // Render immediately, then poll every 5 seconds
         fetchLeaderboard();
         setInterval(fetchLeaderboard, 5000);
     </script>
