@@ -112,7 +112,7 @@
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${t.team_name}</td>
-                        <td>${t.current_level}-${t.current_sublevel}</td>
+                        <td style="color: ${t.current_level >= 5 ? '#39ff14' : 'inherit'}">${t.current_level >= 5 ? 'FINISHED' : t.current_level + '-' + t.current_sublevel}</td>
                         <td><input type="number" class="score-input" value="${t.total_score}" onchange="updateScore(${t.id}, this.value)"></td>
                         <td>${formatTime(t.active_time_seconds)}</td>
                         <td>

@@ -117,7 +117,7 @@
                     tr.innerHTML = `
                         <td class="rank-col ${rankClass}" style="text-align:center">${index + 1}</td>
                         <td class="team-col">${team.team_name.toUpperCase()}</td>
-                        <td class="progress-col">LEVEL ${team.current_level} - S0${team.current_sublevel}</td>
+                        <td class="progress-col">${team.current_level >= 5 ? 'FINISHED' : `LEVEL ${team.current_level} - S0${team.current_sublevel}`}</td>
                         <td class="time-col">${formatTime(team.active_time_seconds)}</td>
                     `;
                     tbody.appendChild(tr);

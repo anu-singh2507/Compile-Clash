@@ -213,10 +213,6 @@ const INFO_DATA = {
     4: {
         title: "MODULE 4: CELESTIAL DEFENDER",
         body: "<ul><li><b>CONTROLS:</b> <b style='color:#ff00ea'>Player 1 (Pink)</b>: WASD + <b>SPACEBAR</b> to shoot. <b style='color:#00ffff'>Player 2 (Blue)</b>: Arrows + <b>ENTER</b> to shoot.</li><li><b>GOAL:</b> Kill the bad guys. At the Boss, shoot the <b>ASTEROIDS</b> to kick them into the Boss!</li><li><b>HEARTS:</b> You have 3 lives total. If one ship breaks, the game resets!</li></ul>"
-    },
-    5: {
-        title: "MODULE 5: SYNC SURVIVE",
-        body: "<ul><li><b>GOAL:</b> Just survive for the full time! Stay close to your friend and don't touch the red lasers.</li></ul>"
     }
 };
 
@@ -242,7 +238,7 @@ class UIScene extends Phaser.Scene {
     constructor() { super('UIScene'); }
     create() {
         this.currentState = GameState.PLAYING;
-        this.modules = { 1: 'LevelDevilScene', 2: 'DataFragmentScene', 3: 'DriftRacingScene', 4: 'SpaceShooterScene', 5: 'SyncSurviveScene' };
+        this.modules = { 1: 'LevelDevilScene', 2: 'DataFragmentScene', 3: 'DriftRacingScene', 4: 'SpaceShooterScene', 5: 'WinScene' };
 
         // Global Instruction Trigger
         this.manualOverlay = document.getElementById('instruction-overlay');
@@ -298,7 +294,14 @@ class UIScene extends Phaser.Scene {
     updateHUD(sceneName) {
         const m = parseInt(this.registry.get(REGISTRY_MODULE));
         const sl = parseInt(this.registry.get(REGISTRY_SUBLEVEL));
-        const levelNames = { 1: 'GLITCH GRID', 2: 'DATA FRAGMENT', 3: 'CYBER DRIFT', 4: 'CELESTIAL DEFENDER', 5: 'SYNC SURVIVE' };
+        const levelNames = { 1: 'GLITCH GRID', 2: 'DATA FRAGMENT', 3: 'CYBER DRIFT', 4: 'CELESTIAL DEFENDER', 5: 'FINISHED' };
+        
+        if (m >= 5) {
+            this.hudText.setText('');
+            if (this.hudHelp) this.hudHelp.classList.add('hidden');
+            return;
+        }
+
         const levelName = levelNames[m] || `MODULE ${m}`;
         this.hudText.setText(`${levelName}\nSUBLEVEL: 0${sl}`);
 
@@ -404,14 +407,10 @@ class UIScene extends Phaser.Scene {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ new_level: newLevel, new_sublevel: newSub, score_increment: 100, duration_seconds })
         }).then(() => {
-            if (newLevel === -1) {
-                this.showWinUI();
-            } else {
-                this.scene.stop(this.activeGameplayScene);
-                this.registry.set(REGISTRY_SUBLEVEL, newSub);
-                this.registry.set(REGISTRY_MODULE, newLevel);
-                this.startActiveGameplayScene();
-            }
+            this.scene.stop(this.activeGameplayScene);
+            this.registry.set(REGISTRY_SUBLEVEL, newSub);
+            this.registry.set(REGISTRY_MODULE, newLevel);
+            this.startActiveGameplayScene();
         });
     }
 
@@ -419,11 +418,11 @@ class UIScene extends Phaser.Scene {
         this.scene.stop(this.activeGameplayScene);
         const { width, height } = this.scale;
         
-        // Darken the screen
-        const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.8).setOrigin(0).setDepth(3000);
+        // Darken the screen completely
+        const overlay = this.add.rectangle(0, 0, width, height, 0x0a0a0c, 1.0).setOrigin(0).setDepth(3000);
         
         const style = { 
-            fontSize: '64px', 
+            fontSize: '72px', 
             fill: '#39ff14', 
             fontStyle: 'bold', 
             fontFamily: 'Courier New',
@@ -431,24 +430,44 @@ class UIScene extends Phaser.Scene {
         };
 
         const winText = this.add.text(width / 2, height / 2, 'CONGRATULATIONS!', style).setOrigin(0.5).setDepth(3001).setAlpha(0);
+        winText.setShadow(0, 0, '#39ff14', 10);
         
+        // Compatible Chained Sequence: CONGRATS -> FUNSCRIPT -> THANKS
         this.tweens.add({
             targets: winText,
             alpha: 1,
-            duration: 1000,
+            duration: 1500,
             onComplete: () => {
-                this.time.delayedCall(2000, () => {
+                this.time.delayedCall(1000, () => {
                     this.tweens.add({
                         targets: winText,
                         alpha: 0,
                         duration: 800,
                         onComplete: () => {
-                            winText.setText('YOU HAVE COMPLETED\nTHE GAME');
-                            winText.setFontSize(48);
+                            winText.setText('FUNSCRIPT').setFontSize(120).setColor('#00ffff');
+                            winText.setShadow(0, 0, '#00ffff', 20);
                             this.tweens.add({
                                 targets: winText,
                                 alpha: 1,
-                                duration: 1000
+                                duration: 1500,
+                                onComplete: () => {
+                                    this.time.delayedCall(2000, () => {
+                                        this.tweens.add({
+                                            targets: winText,
+                                            alpha: 0,
+                                            duration: 800,
+                                            onComplete: () => {
+                                                winText.setText('THANKS FOR PLAYING!').setFontSize(48).setColor('#39ff14');
+                                                winText.setShadow(0, 0, '#39ff14', 5);
+                                                this.tweens.add({
+                                                    targets: winText,
+                                                    alpha: 1,
+                                                    duration: 1000
+                                                });
+                                            }
+                                        });
+                                    });
+                                }
                             });
                         }
                     });
@@ -463,10 +482,11 @@ class UIScene extends Phaser.Scene {
         let newSub = curSub + 1;
         let newLevel = curMod;
 
-        // Final Game Completion Check: End at L4 S3
+        // Final Game Completion Check: End at L5 S1
         if (curMod === 4 && curSub === 3) {
-            return { newLevel: -1, newSub: -1 }; // Game End Signal
+            return { newLevel: 5, newSub: 1 }; // Final State
         }
+        if (curMod >= 5) return { newLevel: 5, newSub: 1 };
 
         // Special: Remove L2S3
         if (curMod === 2 && curSub === 2) {
@@ -2329,11 +2349,27 @@ class SpaceShooterScene extends Phaser.Scene {
     }
 }
 
+// ------ LEVEL 5: WIN SCREEN ------
+class WinScene extends Phaser.Scene {
+    constructor() { super('WinScene'); }
+    create() {
+        const { width, height } = this.scale;
+        this.cameras.main.setBackgroundColor('#000000');
+        // Disable all game events/input
+        this.input.enabled = false;
+        this.input.keyboard.enabled = false;
+
+        // Visual is handled by UIScene's showWinUI overlay for consistency
+        const ui = this.scene.get('UIScene');
+        if (ui) ui.showWinUI();
+    }
+}
+
 // ------ END OF GAME ------
 const config = {
     type: Phaser.AUTO, parent: 'game-container', width: '100%', height: '100%',
     backgroundColor: '#0a0a0c', physics: { default: 'arcade', arcade: { debug: false } },
-    scene: [BootScene, MenuScene, UIScene, LevelDevilScene, DataFragmentScene, DriftRacingScene, SpaceShooterScene],
+    scene: [BootScene, MenuScene, UIScene, LevelDevilScene, DataFragmentScene, DriftRacingScene, SpaceShooterScene, WinScene],
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH }
 };
 
